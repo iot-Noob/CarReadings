@@ -45,7 +45,7 @@ def Licance_Plate():
                         CREATE TABLE IF NOT EXISTS License_Plate (
                             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                             license_number VARCHAR(30),
-                            uid INTEGER UNIQUE NOT NULL,
+                            uid INTEGER   NOT NULL,
                             oid INTEGER NOT NULL,
                             FOREIGN KEY (uid) REFERENCES User(id),
                             FOREIGN KEY (oid) REFERENCES Oil_Change(id)
