@@ -8,7 +8,7 @@ def UserTable():
                         username VARCHAR(133),
                         password VARCHAR(122),
                         is_online BOOLEAN,
-                        email VARCHAR,
+                        email VARCHAR UNIQUE,
                         disable BOOLEAN,
                         pic VARCHAR(200),
                         creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

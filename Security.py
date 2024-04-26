@@ -1,4 +1,4 @@
-from Models import Token,User,UserInDB,TokenData
+from Models import User,UserInDB,TokenData,Token 
 from datetime import datetime, timedelta, timezone
 import os
 from dotenv import load_dotenv
@@ -78,3 +78,11 @@ async def get_current_active_user(
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+def decode_token(token: str):
+    try:
+        payload = jwt.decode(token, key, algorithms=[algo])
+        return payload
+    except JWTError:
+        # Handle JWTError, e.g., token expired, invalid signature, etc.
+        return None

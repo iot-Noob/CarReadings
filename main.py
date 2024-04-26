@@ -3,7 +3,7 @@ from fastapi.security import *
 from fastapi.requests import *
 from fastapi.responses import *
 from fastapi.middleware.cors import CORSMiddleware
-from routes import bsicRoutes  
+from routes import  basicRoutes
 
 
 app = FastAPI(title="Car Oil Readings API")
@@ -22,4 +22,4 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
-app.include_router(bsicRoutes)
+app.include_router(basicRoutes)
