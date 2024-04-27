@@ -1,26 +1,26 @@
-from connectDb import *
+from connectDb import RunQuery
 
-def UserTable():
+async def UserTable():
     try:
-            RunQuery(q="""
+            await RunQuery(q="""
                         CREATE TABLE IF NOT EXISTS user (
                         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                        username VARCHAR(133),
+                        username VARCHAR(133) UNIQUE,
                         password VARCHAR(122),
                         is_online BOOLEAN,
                         email VARCHAR UNIQUE,
                         disable BOOLEAN,
                         pic VARCHAR(200),
                         creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        lpid INTEGER NOT NULL UNIQUE,
+                        lpid INTEGER   UNIQUE,
                         FOREIGN KEY (lpid) REFERENCES License_Plate(uid))
-                        """, val=())
+                        """, val=(),sqmq=False,rom=False)
     except Exception as e:
         print("Error creating user table: ", e)
 
-def OilDateTable():
+async def OilDateTable():
     try:
-            RunQuery(q="""
+            await RunQuery(q="""
                         CREATE TABLE IF NOT EXISTS Oil_Change (
                         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         car_name VARCHAR (244) NOT NULL,
@@ -34,14 +34,14 @@ def OilDateTable():
                         oil_vander VARCHAR (200),
                         notes TEXT
                         )
-                        """, val=())
+                        """, val=(),sqmq=False,rom=False)
     except Exception as e:
         print("Error creating user table: ", e)
 
 
-def Licance_Plate():
+async def Licance_Plate():
     try:
-            RunQuery(q="""
+            await RunQuery(q="""
                         CREATE TABLE IF NOT EXISTS License_Plate (
                             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                             license_number VARCHAR(30),
@@ -51,6 +51,6 @@ def Licance_Plate():
                             FOREIGN KEY (oid) REFERENCES Oil_Change(id)
                         ) 
 
-                        """, val=())
+                        """, val=(),sqmq=False,rom=False)
     except Exception as e:
         print("Error creating user table: ", e)
