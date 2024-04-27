@@ -31,10 +31,7 @@ async def signup(user: User):
             False,  # sqmq
             False   # rom
         )
-        if q is not None:  # Check if the query was successful
-            return {"message": "Account created successfully"}
-        else:
-            raise HTTPException(500, "Failed to create account")
+        return {"Query sucess account created"}
     except Exception as e:
         raise HTTPException(500, f"Failed to create account: {str(e)}")
 
