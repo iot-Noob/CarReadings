@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer,HTTPBearer
 from jose import JWTError, jwt
 import bcrypt
-from Models import   User, UserInDB
+from Models import   User, UserInDB 
 from connectDb import RunQuery
 import datetime
 
@@ -87,10 +87,11 @@ async def get_current_user(token: str = Depends(http_bearer)):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
         
         username: str = payload.get("sub")
+        id:str=payload.get("user_id")
         if not username:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Username not found in token")
         
-        return username
+        return {"username":username,"id":id}
     except JWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 

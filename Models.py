@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel,EmailStr, HttpUrl,SecretStr
 from typing import Optional
 
 class User(BaseModel):
@@ -23,3 +23,9 @@ class UserLogin(BaseModel):
     username:str
     password:str
  
+
+class UserProfileUpdate(BaseModel):
+    username: str = None
+    email: EmailStr = None
+    pic: HttpUrl = None
+    password: SecretStr = None
