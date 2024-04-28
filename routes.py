@@ -16,7 +16,7 @@ async def startup_event():
     await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate())
       
 
-@basicRoutes.post("/login", tags=['User auth  Login'], description="Login account with username and password") 
+@basicRoutes.post("/login", tags=['User auth'], description="Login account with username and password") 
 async def login(user_login: UserLogin):
     user_data = await authenticate_user(user_login.username, user_login.password)
     if user_data:
@@ -26,7 +26,7 @@ async def login(user_login: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
 
-@basicRoutes.post("/signup", tags=['User auth  Login'], description="Sign up your account")
+@basicRoutes.post("/signup",tags=['User auth'], description="Sign up your account")
 async def signup(user: User):
     try:
         hp = await get_password_hash(user.password)  # Hash the user's password
@@ -41,6 +41,7 @@ async def signup(user: User):
     except Exception as e:
         raise HTTPException(500, f"Failed to create account: {str(e)}")
 
-
-
- 
+@basicRoutes.delete("/delete_account",tags=['User auth'],description="Delete account permenently ",name="Delete account") 
+async def delete_account(token:str=Depends(get_current_user)):
+    print(token)
+    pass

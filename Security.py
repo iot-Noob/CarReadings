@@ -1,13 +1,15 @@
 import os
 from fastapi import HTTPException, Depends, status
+from fastapi.security import HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer,HTTPBearer
 from jose import JWTError, jwt
 import bcrypt
-from Models import Token, TokenData, User, UserInDB
+from Models import   User, UserInDB
 from connectDb import RunQuery
+import datetime
 
 load_dotenv()
 
@@ -17,7 +19,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 pwd_context = bcrypt
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+http_bearer = HTTPBearer()
+
 
 async def verify_password(plain_password, hashed_password):
     return pwd_context.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
@@ -61,54 +64,41 @@ async def authenticate_user(username: str, password: str):
 async def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+ 
+async def get_current_user(token: str = Depends(http_bearer)):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = await decode_jwt(token.credentials)
+        if payload is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token format")
+        
+        expiration_time = payload.get('exp')
+        if expiration_time is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has no expiration time")
+        
+        expiration_datetime = datetime.datetime.fromtimestamp(expiration_time, datetime.timezone.utc)
+        if expiration_datetime <= datetime.datetime.now(datetime.timezone.utc):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
+        
         username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        # Fetch user data from the database
-        user_data = await RunQuery("SELECT * FROM user WHERE username = ?", (username,), sqmq=False, rom=True)
-        if not user_data:
-            raise credentials_exception
-        # Convert fetched data into a UserInDB object
-        user_dict = dict(user_data[0])
-        return UserInDB(**user_dict)
-    except JWTError:
-        raise credentials_exception
-
-
-async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)],
-):
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
-
+        if not username:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Username not found in token")
+        
+        return username
+    except JWTError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 async def decode_jwt(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError as e:
-        # Handle JWT decoding errors here
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not decode JWT token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
 
  

@@ -22,3 +22,4 @@ class Token(BaseModel):
 class UserLogin(BaseModel):
     username:str
     password:str
+ 
