@@ -28,18 +28,35 @@ async def get_password_hash(password):
 
  
 
-async def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
+async def get_user(username: str):
+    user_data = await RunQuery("SELECT username "" FROM user WHERE username = ?", (username,), sqmq=False, rom=True)
+    if not user_data:
+        return None  # No user found with the given username
+    user_dict = dict(user_data[0])
+    return UserInDB(*user_dict)
 
 
-async def authenticate_user(fake_db, username: str, password: str):
-    user = await get_user(fake_db, username)
-    if not user or not await verify_password(password, user.hashed_password):
-        return False
-    return user
+async def authenticate_user(username: str, password: str):
+    user_data = {}
+    data = await RunQuery(q="""SELECT username, password, id FROM user WHERE username = ?""", val=(username,), sqmq=False, rom=False)
+    if data:
+        username = data[0]
+        password_from_db = data[1]
+        user_id = data[2]
+        
+        password_verified = await verify_password(password, password_from_db)
+        if password_verified:
+            user_data['username'] = username
+            user_data['user_id'] = user_id
+            return user_data
+        else:
+            raise HTTPException(404, "Username or password not valid. Please make sure you enter valid credentials.")
+    else:
+        raise HTTPException(404, "Invalid username or password. Please make sure your account exists.")
 
+
+
+ 
 
 async def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
