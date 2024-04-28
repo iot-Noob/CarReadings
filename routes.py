@@ -4,7 +4,7 @@ from fastapi.requests import  Request
 from fastapi.responses import FileResponse,Response,JSONResponse
 from createTable import *
 import asyncio
-from Models import User,UserLogin,UserProfileUpdate
+from Models import User,UserLogin,UserProfileUpdate,LicancePlateInfo
 from Security import *
 from connectDb import RunQuery,db_path 
 
@@ -101,3 +101,12 @@ async def update_profile(profile_update: UserProfileUpdate, token: str = Depends
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
 
+### Insert data to oil
+@basicRoutes.post("/AddOilInfo",tags=['Addd car oil info'],name="Oil info add",description="User basic oil info add to database")
+async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_user)):
+    try:
+        rq=RunQuery(q="""""",val=())
+    except Exception as e:
+        raise HTTPException(500,"Error canot insert oil data to database ",e)
+ 
+ 

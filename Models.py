@@ -30,3 +30,21 @@ class UserProfileUpdate(BaseModel):
     pic: HttpUrl = None
     password: SecretStr = None
     old_password:SecretStr=None
+
+class CarOilInfo(BaseModel):
+    car_name: str
+    car_model: int
+    odometer_reading: int
+    odometer_reading_next: int
+    oil_change_date: str
+    next_oilChange_date: str
+    oil_grade: str
+    provider: str
+    total_cost: int
+    oil_vendor: str
+    notes: str
+class LicancePlateInfo(CarOilInfo):
+    license_number:str
+    uid:int
+    oid:int
+    
