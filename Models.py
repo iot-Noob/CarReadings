@@ -29,3 +29,4 @@ class UserProfileUpdate(BaseModel):
     email: EmailStr = None
     pic: HttpUrl = None
     password: SecretStr = None
+    old_password:SecretStr=None

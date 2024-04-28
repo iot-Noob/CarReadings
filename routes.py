@@ -61,33 +61,43 @@ async def update_profile(profile_update: UserProfileUpdate, token: str = Depends
         # Construct the update query based on the fields provided in the request
         update_query = "UPDATE user SET"
         update_values = []
+
         if profile_update.username is not None:
             update_query += " username = ?,"
             update_values.append(profile_update.username)
+
         if profile_update.email is not None:
             update_query += " email = ?,"
             update_values.append(profile_update.email)
+
         if profile_update.pic is not None:
             update_query += " pic = ?,"
             update_values.append(str(profile_update.pic))  # Convert URL to string
+
         if profile_update.password is not None:
-            hp = await get_password_hash(profile_update.password.get_secret_value())
-            update_query += " password = ?,"
-            update_values.append(hp)
-        
+            # Verify old password before updating
+            pswd_hash = await RunQuery("""SELECT password FROM user WHERE id = ?""", (token['id'],))
+            old_password_verified = await verify_password(profile_update.old_password.get_secret_value(), pswd_hash[0])
+            
+            if old_password_verified:
+                # Hash the new password
+                hp = await get_password_hash(profile_update.password.get_secret_value())
+                update_query += " password = ?,"
+                update_values.append(hp)
+            else:
+                raise HTTPException(status_code=400, detail="Old password does not match")
+
         # Remove the trailing comma
         update_query = update_query.rstrip(",")
 
         # Add WHERE clause to ensure the update applies only to the current user
         update_query += " WHERE id = ?"
         update_values.append(token['id'])
-        
+
         # Execute the update query
         await RunQuery(update_query, tuple(update_values))
-        
+
         return {"message": "Profile updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
 
-
- 
