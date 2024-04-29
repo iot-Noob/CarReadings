@@ -7,6 +7,7 @@ import asyncio
 from Models import User,UserLogin,UserProfileUpdate,LicancePlateInfo
 from Security import *
 from connectDb import RunQuery,db_path 
+ 
 
 basicRoutes = APIRouter()
 @basicRoutes.on_event('startup')
@@ -105,8 +106,45 @@ async def update_profile(profile_update: UserProfileUpdate, token: str = Depends
 @basicRoutes.post("/AddOilInfo",tags=['Addd car oil info'],name="Oil info add",description="User basic oil info add to database")
 async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_user)):
     try:
-        rq=RunQuery(q="""""",val=())
+        cuid=token['id']
+
+        rq = await RunQuery(
+            q="""INSERT INTO Oil_Change (car_name, odometer_reading, odometer_reading_next, oil_grade, provider, total_cost, oil_vander, notes,cuid)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,?);""",
+            val=(
+                add_info.car_name, 
+                add_info.odometer_reading, 
+                add_info.odometer_reading_next, 
+                add_info.oil_grade, 
+                add_info.provider, 
+                add_info.total_cost, 
+                add_info.oil_vendor, 
+                add_info.notes,
+                cuid
+            ),
+            sqmq=False,
+            rom=False
+        )
+
+        goid = await RunQuery(
+            q="""SELECT OC.id
+                FROM Oil_Change OC
+                JOIN user U ON OC.cuid = U.id
+                WHERE U.id = ?;""",
+            val=(cuid,),
+            sqmq=False,
+            rom=True  # Corrected to True to return the result as a list of dictionaries
+        )
+        
+        rq2 = await RunQuery(
+            q="""INSERT INTO License_Plate (license_number, uid, oid)
+                VALUES (?, ?, ?);""",
+            val=(add_info.license_number, cuid, goid[0][0]),  
+            sqmq=False,
+            rom=False
+)
+        return {f"Data insert sucess ":f"Entery sucessful {"Oil insert error "+rq if rq else "",  "get oid error "+rq2 if rq2 else ""}"}
     except Exception as e:
-        raise HTTPException(500,"Error canot insert oil data to database ",e)
+        raise HTTPException(500,f"Error canot insert oil data to database {e}")
  
  

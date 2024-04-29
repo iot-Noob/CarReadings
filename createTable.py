@@ -36,7 +36,9 @@ async def OilDateTable():
                         oil_vander VARCHAR (200),
                         notes TEXT,
                         creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_update  DEFAULT CURRENT_TIMESTAMP
+                        last_update  DEFAULT CURRENT_TIMESTAMP,
+                        cuid INTEGER, 
+                        FOREIGN KEY (cuid) REFERENCES user(id)
                         )
                         """, val=(),sqmq=False,rom=False)
     except Exception as e:

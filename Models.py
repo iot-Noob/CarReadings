@@ -45,6 +45,4 @@ class CarOilInfo(BaseModel):
     notes: str
 class LicancePlateInfo(CarOilInfo):
     license_number:str
-    uid:int
-    oid:int
-    
+ 
