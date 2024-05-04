@@ -14,7 +14,7 @@ basicRoutes = APIRouter()
 async def startup_event():
     main()
     print("API IS Starting....")
-    await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate())
+    await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate(),User_License_Plate())
       
 
 @basicRoutes.post("/login", tags=['User auth'], description="Login account with username and password") 
@@ -142,7 +142,26 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
             val=(add_info.license_number, cuid, goid[0][0]),  
             sqmq=False,
             rom=False
-)
+            )
+        licance_id=await RunQuery(q="""
+                                  SELECT LP.id
+                                  FROM License_Plate LP
+                                  JOIN Oil_Change OC ON LP.oid = OC.id
+                                  WHERE OC.cuid = ?
+                                  ORDER BY LP.id DESC
+                                  LIMIT 1""",
+                                    val=(cuid,),rom=False,sqmq=False
+                                )
+        print(licance_id) 
+   
+        iulp = await RunQuery(
+            q="INSERT INTO User_License_Plate (user_id, license_plate_id) VALUES (?, ?)",
+            val=(cuid, licance_id[0]),  # Accessing the 'id' field from the dictionary
+            sqmq=False,
+            rom=False
+        )
+
+        
         return {f"Data insert sucess ":f"Entery sucessful {"Oil insert error "+rq if rq else "",  "get oid error "+rq2 if rq2 else ""}"}
     except Exception as e:
         raise HTTPException(500,f"Error canot insert oil data to database {e}")

@@ -2,20 +2,19 @@ from connectDb import RunQuery
 
 async def UserTable():
     try:
-            await RunQuery(q="""
-                        CREATE TABLE IF NOT EXISTS user (
-                        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                        username VARCHAR(133) UNIQUE,
-                        password VARCHAR(122),
-                        is_online BOOLEAN,
-                        email VARCHAR UNIQUE,
-                        disable BOOLEAN,
-                        pic VARCHAR(200),
-                        creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_update  DEFAULT CURRENT_TIMESTAMP,
-                        lpid INTEGER   UNIQUE,
-                        FOREIGN KEY (lpid) REFERENCES License_Plate(uid))
-                        """, val=(),sqmq=False,rom=False)
+        await RunQuery(q="""
+            CREATE TABLE IF NOT EXISTS user (
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                username VARCHAR(133) UNIQUE,
+                password VARCHAR(122),
+                is_online BOOLEAN,
+                email VARCHAR UNIQUE,
+                disable BOOLEAN,
+                pic VARCHAR(200),
+                creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """, val=(), sqmq=False, rom=False)
     except Exception as e:
         print("Error creating user table: ", e)
 
@@ -62,3 +61,20 @@ async def Licance_Plate():
                         """, val=(),sqmq=False,rom=False)
     except Exception as e:
         print("Error creating user table: ", e)
+
+async def User_License_Plate():
+    try:
+        await RunQuery(q="""
+            CREATE TABLE IF NOT EXISTS User_License_Plate (
+                
+                user_id INTEGER,
+                license_plate_id INTEGER,
+          
+                FOREIGN KEY (user_id) REFERENCES User(id),
+                FOREIGN KEY (license_plate_id) REFERENCES License_Plate(id)
+            )
+        """)
+    except Exception as e:
+        print("Failed to create User_License_Plate table: ", e)
+
+ 
