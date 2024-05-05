@@ -21,24 +21,25 @@ async def UserTable():
 async def OilDateTable():
     try:
             await RunQuery(q="""
-                        CREATE TABLE IF NOT EXISTS Oil_Change (
-                        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                        car_name VARCHAR (244) NOT NULL,
-                        car_model INTEGER,
-                        odometer_reading INTEGER NOT NULL,
-                        odometer_reading_next INTEGER NOT NULL,
-                        oil_change_date DATETIME,
-                        next_oilChange_date DATETIME,
-                        oil_grade VARCHAR (100),
-                        provider VARCHAR (100),
-                        total_cost INTEGER,
-                        oil_vander VARCHAR (200),
-                        notes TEXT,
-                        creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_update  DEFAULT CURRENT_TIMESTAMP,
-                        cuid INTEGER, 
-                        FOREIGN KEY (cuid) REFERENCES user(id)
-                        )
+                            CREATE TABLE IF NOT EXISTS Oil_Change (
+                            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                            car_name VARCHAR (244) NOT NULL,
+                            car_model INTEGER NOT NULL,
+                            odometer_reading INTEGER NOT NULL,
+                            odometer_reading_next INTEGER NOT NULL,
+                            oil_change_date  DATETIME NOT NULL,
+                            next_oilChange_date  DATETIME  ,
+                            oil_grade VARCHAR (100) NOT NULL,   
+                            provider VARCHAR (100) NOT NULL,   
+                            total_cost INTEGER NOT NULL,
+                            oil_vander VARCHAR (200) NOT NULL,
+                            notes TEXT,
+                            creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            last_update  DEFAULT CURRENT_TIMESTAMP,
+                            cuid INTEGER, 
+                            FOREIGN KEY (cuid) REFERENCES user(id)
+                            )
+
                         """, val=(),sqmq=False,rom=False)
     except Exception as e:
         print("Error creating user table: ", e)
@@ -49,7 +50,7 @@ async def Licance_Plate():
             await RunQuery(q="""
                         CREATE TABLE IF NOT EXISTS License_Plate (
                             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                            license_number VARCHAR(30),
+                            license_number VARCHAR(30) UNIQUE NOT NULL,
                             uid INTEGER   NOT NULL,
                             oid INTEGER NOT NULL,
                             creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
