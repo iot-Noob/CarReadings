@@ -50,7 +50,7 @@ async def Licance_Plate():
             await RunQuery(q="""
                         CREATE TABLE IF NOT EXISTS License_Plate (
                             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                            license_number VARCHAR(30) UNIQUE NOT NULL,
+                            license_number VARCHAR(30)   NOT NULL,
                             uid INTEGER   NOT NULL,
                             oid INTEGER NOT NULL,
                             creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

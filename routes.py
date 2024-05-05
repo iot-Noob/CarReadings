@@ -1,5 +1,5 @@
 from installer import main
-from fastapi import APIRouter,Form,Request,Response,HTTPException
+from fastapi import APIRouter,Form,Request,Response,HTTPException,Query
 from fastapi.requests import  Request
 from fastapi.responses import FileResponse,Response,JSONResponse
 from createTable import *
@@ -281,7 +281,7 @@ async def update_license_number(ld: LicancePlateInfoUpdater, token: str = Depend
 
 ### Get all data of current user
  
-@basicRoutes.get("/get_all", tags=['Car Oil data menuplation'], name='Get all data of car oil', description='all cars data and oil related info of nomatter how many car you have' )
+@basicRoutes.get("/get_all", tags=['Car Oil data Get'], name='Get all data of car oil', description='all cars data and oil related info of nomatter how many car you have' )
 async def get_all(token: str = Depends(get_current_user)):
     try:
         cuid = token['id']
@@ -335,3 +335,55 @@ async def get_all(token: str = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(500, f"Error retrieving car oil data: {e}")
  
+ ## Get  by licance plate
+@basicRoutes.get("/get_by_licance", tags=['Car Oil data Get'], name='Get data by license number', description='Search by license plate')
+async def get_all(licance: str = Query(..., title="Search by license plate", description="Search oil data by license plate number"), token: str = Depends(get_current_user)):
+    try:
+        cuid = token['id']
+        all_data = await RunQuery(
+            q="""
+                SELECT 
+                    LP.license_number,
+                    OC.car_name,
+                    OC.car_model,
+                    OC.odometer_reading,
+                    OC.odometer_reading_next,
+                    OC.oil_change_date,
+                    OC.next_oilChange_date,
+                    OC.oil_grade,
+                    OC.provider,
+                    OC.total_cost,
+                    OC.oil_vander,
+                    OC.notes
+                FROM 
+                    License_Plate LP
+                JOIN 
+                    Oil_Change OC ON LP.oid = OC.id
+                WHERE
+                    OC.cuid = ? AND LP.license_number = ?
+            """,
+            val=(cuid, licance),
+            rom=True,
+            sqmq=False
+        )
+
+        response_data = []
+        for d in all_data:
+            response_data.append({
+                "licance_number": d[0],
+                "car_name": d[1],
+                "model": d[2],
+                "odometer_reading": d[3],
+                "odometer_reading_next": d[4],
+                "Oil_change_date": d[5],
+                "next_oilChange_date": d[6],
+                "oil_grade": d[7],
+                "provider": d[8],
+                "total_cost": d[9],
+                "oil_vander": d[10],
+                "notes": d[11]
+            })
+
+        return response_data
+    except Exception as e:
+        raise HTTPException(500, f"Error retrieving car oil data: {e}")
