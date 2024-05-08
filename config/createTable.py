@@ -1,4 +1,4 @@
-from connectDb import RunQuery
+from config.connectDb import RunQuery
 
 async def UserTable():
     try:

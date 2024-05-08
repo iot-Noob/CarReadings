@@ -3,7 +3,7 @@ from fastapi.security import *
 from fastapi.requests import *
 from fastapi.responses import *
 from fastapi.middleware.cors import CORSMiddleware
-from routes import  basicRoutes
+from routes.routes import  basicRoutes
 
 
 app = FastAPI(title="Car Oil Readings API")

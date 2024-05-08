@@ -1,12 +1,12 @@
-from installer import main
+from config.installer import main
 from fastapi import APIRouter,Form,Request,Response,HTTPException,Query
 from fastapi.requests import  Request
 from fastapi.responses import FileResponse,Response,JSONResponse
-from createTable import *
+from config.createTable import *
 import asyncio
-from Models import User,UserLogin,UserProfileUpdate,LicancePlateInfo ,CarOilInfoUpdater,LicancePlateInfoUpdater
-from Security import *
-from connectDb import RunQuery,db_path 
+from models.Models import User,UserLogin,UserProfileUpdate,LicancePlateInfo ,CarOilInfoUpdater,LicancePlateInfoUpdater
+from security.Security import *
+from config.connectDb import RunQuery,db_path 
  
 basicRoutes = APIRouter()
 @basicRoutes.on_event('startup')

@@ -7,8 +7,8 @@ from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer,HTTPBearer
 from jose import JWTError, jwt
 import bcrypt
-from Models import   User, UserInDB 
-from connectDb import RunQuery
+from models.Models import   User, UserInDB 
+from config.connectDb import RunQuery
 import datetime
 
 load_dotenv()
