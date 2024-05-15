@@ -169,7 +169,7 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
             rom=False  # Corrected to True to return the result as a list of dictionaries
         )
         
-        await Insert_OE(cuid,add_info.license_number)
+       
 
         if_le=await RunQuery(q="""
                              SELECT License_Plate.id 
@@ -178,7 +178,8 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
                              WHERE User_License_Plate.user_id = ? 
                              AND License_Plate.license_number =?;
                              """,val=(cuid,add_info.license_number))
- 
+        if if_le:
+             await Insert_OE(cuid,add_info.license_number)
         if not if_le:
             print(f"NEWLY ENTER DATA OIL ID :::: ",goid[0])
             rq2 = await RunQuery(
