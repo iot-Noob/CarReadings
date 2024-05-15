@@ -137,12 +137,15 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
                   odometer_reading_next,
                   oil_grade,
                   provider,
+                  air_filter,
+                  oil_filter,
+                  ac_filter,
                   total_cost,
                   oil_vander,
                   oil_change_date,
                   notes,
                   cuid   )
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)""",
             val=(
                 add_info.car_name, 
                 add_info.car_model,
@@ -152,6 +155,9 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
                 add_info.provider, 
                 add_info.total_cost, 
                 add_info.oil_vendor, 
+                add_info.air_filter,
+                add_info.oil_filter,
+                add_info.ac_filter,
                 add_info.oil_change_date,
                 add_info.notes,
                 cuid
@@ -263,6 +269,18 @@ async def update_info(id:int,data: CarOilInfoUpdater, token: str = Depends(get_c
     if data.oil_vendor:
         update_query += " oil_vander = ?,"
         update_values.append(data.oil_vendor)
+    
+    if data.air_filter:
+        update_query += " air_filter = ?,"
+        update_values.append(data.air_filter)
+
+    if data.oil_filter:
+        update_query += " oil_filter = ?,"
+        update_values.append(data.oil_filter)
+
+    if data.ac_filter:
+        update_query += " ac_filter = ?,"
+        update_values.append(data.ac_filter)
 
     if data.notes:
         update_query += " notes = ?,"
@@ -422,7 +440,7 @@ async def get_all(licance: str = Query(..., title="Search by license plate", des
     
 ### Get LICENCE number for current user
 
-@basicRoutes.get('/get_licence_number', tags=['get_licence_plate_info'])
+@basicRoutes.get('/get_license_number', tags=['get_licence_plate_info'])
 async def get_licence(token: str = Depends(get_current_user)):
     try:
         cuid = token['id']

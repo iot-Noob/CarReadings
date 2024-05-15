@@ -40,6 +40,9 @@ class CarOilInfo(BaseModel):
     next_oilChange_date: str
     oil_grade: str
     provider: str
+    air_filter:str|None=None
+    oil_filter:str|None=None
+    ac_filter:str|None=None
     total_cost: int 
     oil_vendor: str|None=None
     notes: str
@@ -55,6 +58,9 @@ class CarOilInfoUpdater(BaseModel):
     next_oilChange_date: str|None=None
     oil_grade: str|None=None
     provider: str|None=None
+    air_filter:str|None=None
+    oil_filter:str|None=None
+    ac_filter:str|None=None
     total_cost: int|None=None
     oil_vendor: str|None=None
     notes: str|None=None
