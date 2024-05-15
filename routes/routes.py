@@ -336,6 +336,8 @@ async def get_all(token: str = Depends(get_current_user)):
                     Oil_Change OC
                 LEFT JOIN 
                     License_Plate LP ON OC.id = LP.oid
+                    JOIN OilEntry oe ON license_plate_id=LP.id
+                   
                 WHERE
                     OC.cuid = ?
             """,
