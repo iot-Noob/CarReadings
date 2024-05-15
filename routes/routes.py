@@ -7,13 +7,13 @@ import asyncio
 from models.Models import User,UserLogin,UserProfileUpdate,LicancePlateInfo ,CarOilInfoUpdater,LicancePlateInfoUpdater
 from security.Security import *
 from config.connectDb import RunQuery,db_path 
- 
+import time
 basicRoutes = APIRouter()
 @basicRoutes.on_event('startup')
 async def startup_event():
     main()
     print("API IS Starting....")
-    await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate(),User_License_Plate())
+    await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate(),User_License_Plate(),UserOilEntry())
       
 
 @basicRoutes.post("/login", tags=['User auth'], description="Login account with username and password") 
@@ -101,6 +101,27 @@ async def update_profile(profile_update: UserProfileUpdate, token: str = Depends
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update profile: {str(e)}")
 
+async def Insert_OE(current_id,cln):
+    try:
+       goid=await RunQuery(q="""
+                           SELECT MAX(id) AS latest_oil_id
+                            FROM Oil_Change
+                            WHERE cuid=?""",val=(current_id,),rom=False,sqmq=False)
+       if_le=await RunQuery(q="""
+                             SELECT License_Plate.id 
+                             FROM License_Plate 
+                             INNER JOIN User_License_Plate ON License_Plate.id = User_License_Plate.license_plate_id 
+                             WHERE User_License_Plate.user_id = ? 
+                             AND License_Plate.license_number =?""",val=(current_id,cln,),rom=False,sqmq=False)
+       inoe=await RunQuery(
+                        """
+                        INSERT INTO OilEntry(license_plate_id,oil_id)
+                        VALUES(?,?)
+                        """,val=(if_le[0],goid[0]))
+        
+    except Exception as e:
+        raise HTTPException(500,f"Error entry for oil due to ::: {e}")
+
 ### Insert data to oil
 @basicRoutes.post("/AddOilInfo",tags=['Car Oil data menuplation'],name="Oil info add",description="User basic oil info add to database")
 async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_user)):
@@ -110,19 +131,18 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
 
         rq = await RunQuery(
             q=""" INSERT INTO Oil_Change (
-    car_name,
-    car_model,
-    odometer_reading,
-    odometer_reading_next,
-    oil_grade,
-    provider,
-    total_cost,
-    oil_vander,
-    oil_change_date,
-    notes,
-    cuid
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  car_name,
+                  car_model,
+                  odometer_reading,
+                  odometer_reading_next,
+                  oil_grade,
+                  provider,
+                  total_cost,
+                  oil_vander,
+                  oil_change_date,
+                  notes,
+                  cuid   )
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             val=(
                 add_info.car_name, 
                 add_info.car_model,
@@ -141,15 +161,16 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         )
 
         goid = await RunQuery(
-            q="""SELECT OC.id
-                FROM Oil_Change OC
-                JOIN user U ON OC.cuid = U.id
-                WHERE U.id = ?;""",
+            q="""SELECT MAX(id) AS latest_oil_id
+                FROM Oil_Change
+                WHERE cuid=? """,
             val=(cuid,),
             sqmq=False,
-            rom=True  # Corrected to True to return the result as a list of dictionaries
+            rom=False  # Corrected to True to return the result as a list of dictionaries
         )
         
+        await Insert_OE(cuid,add_info.license_number)
+
         if_le=await RunQuery(q="""
                              SELECT License_Plate.id 
                              FROM License_Plate 
@@ -157,12 +178,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                              WHERE User_License_Plate.user_id = ? 
                              AND License_Plate.license_number =?;
                              """,val=(cuid,add_info.license_number))
-        
+ 
         if not if_le:
+            print(f"NEWLY ENTER DATA OIL ID :::: ",goid[0])
             rq2 = await RunQuery(
                 q="""INSERT INTO License_Plate (license_number, uid, oid)
                     VALUES (?, ?, ?);""",
-                val=(add_info.license_number, cuid, goid[0][0]),  
+                val=(add_info.license_number, cuid, goid[0]),  
                 sqmq=False,
                 rom=False
                 )
@@ -175,16 +197,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                                     LIMIT 1""",
                                         val=(cuid,),rom=False,sqmq=False
                                     )
-    
-    
+ 
             iulp = await RunQuery(
                 q="INSERT INTO User_License_Plate (user_id, license_plate_id) VALUES (?, ?)",
                 val=(cuid, licance_id[0]),  # Accessing the 'id' field from the dictionary
                 sqmq=False,
                 rom=False
             )
-
-        
+            await Insert_OE(cuid,add_info.license_number)
+  
         return {f"Data insert sucess ":f"Entery sucessful {"Oil insert error "+rq if rq else "",  "get oid error "+rq2 if rq2 else ""}"}
     except Exception as e:
         raise HTTPException(500,f"Error canot insert oil data to database {e}")
@@ -297,26 +318,25 @@ async def get_all(token: str = Depends(get_current_user)):
         cuid = token['id']
         all_data = await RunQuery(
             q=f"""
-            SELECT 
-              
-                LP.license_number,
-                OC.car_name,
-                OC.car_model,
-                OC.odometer_reading,
-                OC.odometer_reading_next,
-                OC.oil_change_date,
-                OC.next_oilChange_date,
-                OC.oil_grade,
-                OC.provider,
-                OC.total_cost,
-                OC.oil_vander,
-                OC.notes
-            FROM 
-                License_Plate LP
-            JOIN 
-                Oil_Change OC ON LP.oid = OC.id
-            WHERE
-                OC.cuid = ?
+                SELECT 
+                    LP.license_number,
+                    OC.car_name,
+                    OC.car_model,
+                    OC.odometer_reading,
+                    OC.odometer_reading_next,
+                    OC.oil_change_date,
+                    OC.next_oilChange_date,
+                    OC.oil_grade,
+                    OC.provider,
+                    OC.total_cost,
+                    OC.oil_vander,
+                    OC.notes
+                FROM 
+                    Oil_Change OC
+                LEFT JOIN 
+                    License_Plate LP ON OC.id = LP.oid
+                WHERE
+                    OC.cuid = ?
             """,
             val=(cuid,),
             rom=True,
@@ -352,25 +372,25 @@ async def get_all(licance: str = Query(..., title="Search by license plate", des
         cuid = token['id']
         all_data = await RunQuery(
             q="""
-                SELECT 
-                    LP.license_number,
-                    OC.car_name,
-                    OC.car_model,
-                    OC.odometer_reading,
-                    OC.odometer_reading_next,
-                    OC.oil_change_date,
-                    OC.next_oilChange_date,
-                    OC.oil_grade,
-                    OC.provider,
-                    OC.total_cost,
-                    OC.oil_vander,
-                    OC.notes
-                FROM 
-                    License_Plate LP
-                JOIN 
-                    Oil_Change OC ON LP.oid = OC.id
-                WHERE
-                    OC.cuid = ? AND LP.license_number = ?
+             SELECT 
+            LP.license_number,
+            OC.car_name,
+            OC.car_model,
+            OC.odometer_reading,
+            OC.odometer_reading_next,
+            OC.oil_change_date,
+            OC.next_oilChange_date,
+            OC.oil_grade,
+            OC.provider,
+            OC.total_cost,
+            OC.oil_vander,
+            OC.notes
+        FROM 
+            License_Plate LP
+        JOIN 
+            Oil_Change OC ON LP.oid = OC.id
+        WHERE
+            OC.cuid = ? AND LP.license_number = ?
             """,
             val=(cuid, licance),
             rom=True,

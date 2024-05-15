@@ -50,7 +50,7 @@ async def Licance_Plate():
             await RunQuery(q="""
                         CREATE TABLE IF NOT EXISTS License_Plate (
                             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                            license_number VARCHAR(30)   NOT NULL,
+                            license_number VARCHAR(30)   NOT NULL UNIQUE,
                             uid INTEGER   NOT NULL,
                             oid INTEGER NOT NULL,
                             creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -69,13 +69,24 @@ async def User_License_Plate():
             CREATE TABLE IF NOT EXISTS User_License_Plate (
                 
                 user_id INTEGER,
-                license_plate_id INTEGER,
-          
+                license_plate_id INTEGER, 
                 FOREIGN KEY (user_id) REFERENCES User(id),
-                FOREIGN KEY (license_plate_id) REFERENCES License_Plate(id)
+                FOREIGN KEY (license_plate_id) REFERENCES License_Plate(id) 
             )
         """)
     except Exception as e:
         print("Failed to create User_License_Plate table: ", e)
-
  
+async def UserOilEntry(): ## For same oil entry on same licence plate
+    try:
+        await RunQuery(q="""
+                CREATE TABLE IF NOT EXISTS OilEntry (
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                license_plate_id INTEGER, 
+                oil_id INTEGER, 
+                FOREIGN KEY (license_plate_id) REFERENCES License_Plate(id), 
+                FOREIGN KEY (oil_id) REFERENCES Oil_Change(id) 
+            )
+        """)
+    except Exception as e:
+        print("Failed to create User OilEntry due to :::  ", e)
