@@ -1,4 +1,4 @@
-from pydantic import BaseModel,EmailStr, HttpUrl,SecretStr
+from pydantic import BaseModel,EmailStr, HttpUrl,SecretStr,validator
 from typing import Optional
 
 class User(BaseModel):
@@ -40,9 +40,24 @@ class CarOilInfo(BaseModel):
     next_oilChange_date: str
     oil_grade: str
     provider: str
+    air_filter:str|None=None
+    oil_filter:str|None=None
+    ac_filter:str|None=None
     total_cost: int 
     oil_vendor: str|None=None
     notes: str
+
+    @validator('odometer_reading_next')
+    def validate_odometer_reading_next(cls, value, values):
+        if 'odometer_reading' in values and value == values['odometer_reading']:
+            raise ValueError('Odometer reading next should not be the same as odometer reading')
+        return value
+
+    @validator('next_oilChange_date')
+    def validate_next_oilChange_date(cls, value, values):
+        if 'oil_change_date' in values and value == values['oil_change_date']:
+            raise ValueError('Next oil change date should not be the same as oil change date')
+        return value
 class LicancePlateInfo(CarOilInfo):
     license_number:str
  
@@ -55,8 +70,21 @@ class CarOilInfoUpdater(BaseModel):
     next_oilChange_date: str|None=None
     oil_grade: str|None=None
     provider: str|None=None
+    air_filter:str|None=None
+    oil_filter:str|None=None
+    ac_filter:str|None=None
     total_cost: int|None=None
     oil_vendor: str|None=None
     notes: str|None=None
+    @validator('odometer_reading_next')
+    def validate_odometer_reading_next(cls, value, values):
+        if 'odometer_reading' in values and value == values['odometer_reading']:
+            raise ValueError('Odometer reading next should not be the same as odometer reading')
+        return value
+
+    @validator('next_oilChange_date')
+    def validate_next_oilChange_date(cls, value, values):
+        if 'oil_change_date' in values and value == values['oil_change_date']:
+            raise ValueError('Next oil change date should not be the same as oil change date')
 class LicancePlateInfoUpdater(BaseModel):
     license_number:str 
