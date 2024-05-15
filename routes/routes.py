@@ -214,7 +214,7 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
 ### Update items
  
 @basicRoutes.patch("/update_oil_info", tags=['Car Oil data menuplation'], name="Oil info Update", description="Update user data oil info only specific fields")
-async def update_info(data: CarOilInfoUpdater, token: str = Depends(get_current_user)):
+async def update_info(id:int,data: CarOilInfoUpdater, token: str = Depends(get_current_user)):
     cuid = token['id']
     
     # Initialize an empty list to store the update query parameters
@@ -272,8 +272,8 @@ async def update_info(data: CarOilInfoUpdater, token: str = Depends(get_current_
     update_query = update_query.rstrip(",")
 
     # Add the WHERE clause to update the data only for the current user
-    update_query += " WHERE id IN (SELECT oid FROM License_Plate WHERE uid = ?)"
-    update_values.append(cuid)
+    update_query += " WHERE id = ? AND id IN (SELECT oid FROM License_Plate WHERE uid = ?)"
+    update_values.extend([id, cuid])
 
     try:
         # Execute the update query
@@ -282,8 +282,6 @@ async def update_info(data: CarOilInfoUpdater, token: str = Depends(get_current_
         return {"message": "Oil information updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update oil information: {str(e)}")
-
-    
 
 ##Update licance
 @basicRoutes.patch("/update_license_number", tags=['Car Oil data menuplation'], name="Update License Number", description="Update the license number associated with oil change information")
@@ -375,23 +373,24 @@ async def get_all(licance: str = Query(..., title="Search by license plate", des
         cuid = token['id']
         all_data = await RunQuery(
             q="""
-             SELECT 
-            LP.license_number,
-            OC.car_name,
-            OC.car_model,
-            OC.odometer_reading,
-            OC.odometer_reading_next,
-            OC.oil_change_date,
-            OC.next_oilChange_date,
-            OC.oil_grade,
-            OC.provider,
-            OC.total_cost,
-            OC.oil_vander,
-            OC.notes
-        FROM 
-            License_Plate LP
-        JOIN 
-            Oil_Change OC ON LP.oid = OC.id
+               SELECT 
+                    LP.license_number,
+                    OC.car_name,
+                    OC.car_model,
+                    OC.odometer_reading,
+                    OC.odometer_reading_next,
+                    OC.oil_change_date,
+                    OC.next_oilChange_date,
+                    OC.oil_grade,
+                    OC.provider,
+                    OC.total_cost,
+                    OC.oil_vander,
+                    OC.notes
+                FROM 
+                    Oil_Change OC
+                LEFT JOIN 
+                    License_Plate LP ON OC.id = LP.oid
+                    JOIN OilEntry oe ON license_plate_id=LP.id
         WHERE
             OC.cuid = ? AND LP.license_number = ?
             """,
