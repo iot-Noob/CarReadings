@@ -419,3 +419,39 @@ async def get_all(licance: str = Query(..., title="Search by license plate", des
         return response_data
     except Exception as e:
         raise HTTPException(500, f"Error retrieving car oil data: {e}")
+    
+### Get LICENCE number for current user
+
+@basicRoutes.get('/get_licence_number', tags=['get_licence_plate_info'])
+async def get_licence(token: str = Depends(get_current_user)):
+    try:
+        cuid = token['id']
+        dd = []
+        
+        # Ensure that the parameter is passed as a tuple, even if it contains only one value
+        licno = await RunQuery(
+            q="""SELECT LP.id, LP.license_number
+                 FROM License_Plate LP 
+                 JOIN User_License_Plate ulp ON LP.id = ulp.license_plate_id
+                 JOIN User u ON ulp.user_id = u.id
+                 WHERE u.id = ?
+                 """,
+            val=(cuid,),  # Note the comma to create a tuple with one element
+            sqmq=False,
+            rom=True
+        )
+        
+        # Check if no records found
+        if licno is None:
+            return Response(content="No records found", status_code=404)
+        
+        # Format the data into a list of dictionaries
+        dd = [{"id": data[0], "license_no": data[1]} for data in licno]
+        
+        return dd
+    except Exception as e:
+        raise HTTPException(500, f"Error occurred while fetching license plate: {e}")
+
+
+
+    
