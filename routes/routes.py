@@ -345,9 +345,14 @@ async def get_all(token: str = Depends(get_current_user)):
                     OC.next_oilChange_date,
                     OC.oil_grade,
                     OC.provider,
+                    air_filter,
+                    oil_filter,
+                    ac_filter,
                     OC.total_cost,
                     OC.oil_vander,
-                    OC.notes
+                    OC.notes,
+                    OC.last_update,
+                    OC.creation_date
                 FROM 
                     Oil_Change OC
                 LEFT JOIN 
@@ -375,9 +380,14 @@ async def get_all(token: str = Depends(get_current_user)):
                    "next_oilChange_date":d[6],
                    "oil_grade":d[7],
                     "provider":d[8],
-                    "total_cost":d[9],
-                    "oil_vander":d[10],
-                    "notes":d[11]
+                    "air_filter":d[9],
+                    "oil_filter":d[10],
+                    "ac_filter":d[11],
+                    "total_cost":d[12],
+                    "oil_vander":d[13],
+                    "notes":d[14],
+                    "last_update":d[15],
+                    "creation_date":d[16]
            
             })
         return rf
@@ -401,9 +411,14 @@ async def get_all(licance: str = Query(..., title="Search by license plate", des
                     OC.next_oilChange_date,
                     OC.oil_grade,
                     OC.provider,
+                    air_filter,
+                    oil_filter,
+                    ac_filter,
                     OC.total_cost,
                     OC.oil_vander,
-                    OC.notes
+                    OC.notes,
+                    OC.last_update,
+                    OC.creation_date
                 FROM 
                     Oil_Change OC
                 LEFT JOIN 
@@ -429,9 +444,14 @@ async def get_all(licance: str = Query(..., title="Search by license plate", des
                 "next_oilChange_date": d[6],
                 "oil_grade": d[7],
                 "provider": d[8],
-                "total_cost": d[9],
-                "oil_vander": d[10],
-                "notes": d[11]
+                "air_filter":d[9],
+                "oil_filter":d[10],
+                "ac_filter":d[11],
+                "total_cost":d[12],
+                "oil_vander":d[13],
+                "notes":d[14],
+                "last_update":d[15],
+                 "creation_date":d[16]
             })
 
         return response_data
