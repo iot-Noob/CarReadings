@@ -10,6 +10,56 @@ from config.connectDb import RunQuery,db_path
 from datetime import datetime
 
 basicRoutes = APIRouter()
+
+async def delete_all(token):
+    try:
+        uid = token['id']
+        
+        # Delete data from User_License_Plate table
+        await RunQuery(
+            q="DELETE FROM User_License_Plate WHERE user_id = ?",
+            val=(uid,),
+            sqmq=False,
+            rom=False
+        )
+
+        # Delete data from OilEntry table
+        await RunQuery(
+            q="DELETE FROM OilEntry WHERE license_plate_id IN (SELECT id FROM License_Plate WHERE uid = ?)",
+            val=(uid,),
+            sqmq=False,
+            rom=False
+        )
+
+        # Delete data from License_Plate table
+        await RunQuery(
+            q="DELETE FROM License_Plate WHERE uid = ?",
+            val=(uid,),
+            sqmq=False,
+            rom=False
+        )
+
+        # Delete data from Oil_Change table
+        await RunQuery(
+            q="DELETE FROM Oil_Change WHERE cuid = ?",
+            val=(uid,),
+            sqmq=False,
+            rom=False
+        )
+
+        # Delete data from User table
+        await RunQuery(
+            q="DELETE FROM user WHERE id = ?",
+            val=(uid,),
+            sqmq=False,
+            rom=False
+        )
+
+    except Exception as e:
+        raise HTTPException(500, f"Failed to delete all data: {e}")
+
+
+
 @basicRoutes.on_event('startup')
 async def startup_event():
     main()
@@ -49,6 +99,7 @@ async def delete_account(token:str=Depends(get_current_user),passwd:str=Form(...
         dhp=await verify_password(passwd,dbdata[1])
         cuid=token['id']
         if dbdata[0]==username and dhp:
+            await delete_all(token=token)
             dq=await RunQuery(q="DELETE   FROM user WHERE id=?",val=(cuid,))
             return {f"Account deletion sucess!! {dq if dq else ""}"}
         else:
