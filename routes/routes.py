@@ -7,7 +7,8 @@ import asyncio
 from models.Models import User,UserLogin,UserProfileUpdate,LicancePlateInfo ,CarOilInfoUpdater,LicancePlateInfoUpdater
 from security.Security import *
 from config.connectDb import RunQuery,db_path 
-import time
+from datetime import datetime
+
 basicRoutes = APIRouter()
 @basicRoutes.on_event('startup')
 async def startup_event():
@@ -491,5 +492,41 @@ async def get_licence(token: str = Depends(get_current_user)):
         raise HTTPException(500, f"Error occurred while fetching license plate: {e}")
 
 
+### Alert of oil change date when dates are same
 
-    
+@basicRoutes.get(path="/get_alert", tags=['get alert'], name="Get alert for oil change")
+async def get_alert(token: str = Depends(get_current_user)):
+    try:
+        rd = []
+        uid = token['id']
+     
+        current_date = datetime.now().strftime("%d-%m-%y")
+        print(current_date, type(current_date))
+        ddata = await RunQuery(
+            q="""SELECT 
+                    OC.car_name,
+                    OC.oil_change_date,
+                    OC.next_oilChange_date
+                FROM 
+                    Oil_Change OC
+                WHERE 
+                    OC.next_oilChange_date = ?
+                    AND OC.cuid = ?""",
+            val=(current_date, uid),
+            sqmq=False,
+            rom=True
+        )
+
+        for d in ddata:
+            rd.append({"car_name": d[0], "current_date": d[1], "next_date": d[2]})
+
+        if rd:
+            return rd
+        else:
+            return {"message": "No oil change alerts found for today."}
+
+    except Exception as e:
+        raise HTTPException(500, f"Failed to retrieve data for oil change alerts: {e}")
+
+
+ 
