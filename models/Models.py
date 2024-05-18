@@ -1,13 +1,20 @@
 from pydantic import BaseModel,EmailStr, HttpUrl,SecretStr,validator
 from typing import Optional
-
+import re
 class User(BaseModel):
     username: str
     password: str
     email: Optional[str] = None
     disabled: Optional[bool] = False     
     pic: Optional[str] = None
- 
+    
+    @validator('email')
+    def validate_email(cls, value):
+        # Define the regex pattern for any email domain
+        pattern = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+        if not pattern.match(value):
+            raise ValueError('Invalid email format. Must be yourname@domain.com')
+        return value
 
 class TokenData(BaseModel):
     username: str | None = None
@@ -30,6 +37,14 @@ class UserProfileUpdate(BaseModel):
     pic: HttpUrl = None
     password: SecretStr = None
     old_password:SecretStr=None
+    @validator('email')
+    def validate_email(cls, value):
+        # Define the regex pattern for any email domain
+        pattern = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
+        if not pattern.match(value):
+            raise ValueError('Invalid email format. Must be yourname@domain.com')
+        return value
+        
 
 class CarOilInfo(BaseModel):
     car_name: str 
@@ -86,5 +101,6 @@ class CarOilInfoUpdater(BaseModel):
     def validate_next_oilChange_date(cls, value, values):
         if 'oil_change_date' in values and value == values['oil_change_date']:
             raise ValueError('Next oil change date should not be the same as oil change date')
+
 class LicancePlateInfoUpdater(BaseModel):
     license_number:str 

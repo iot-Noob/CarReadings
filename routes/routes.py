@@ -94,6 +94,11 @@ async def signup(user: User):
 
 @basicRoutes.delete("/delete_account",tags=['User auth'],description="Delete account permenently add current username and password to delete as deletion is senstivve  process require auth if you are a real user ",name="Delete account") 
 async def delete_account(token:str=Depends(get_current_user),passwd:str=Form(...),username:str=Form(...)):
+    ue=await user_exist(tokens=token)
+    print("user exist::: ",ue)
+    if not ue:
+        raise HTTPException(404,"Invalid token no such user exist")
+    
     dbdata=await RunQuery(q="""SELECT username,password FROM user where id=? """,val=(token['id'],))
     if dbdata:
         dhp=await verify_password(passwd,dbdata[1])
@@ -580,4 +585,14 @@ async def get_alert(token: str = Depends(get_current_user)):
         raise HTTPException(500, f"Failed to retrieve data for oil change alerts: {e}")
 
 
- 
+@basicRoutes.get(path='/user_exist',tags=['Debug'])
+async def user_exists(token:str=Depends(get_current_user)):
+    try:
+        data=await user_exist(tokens=token)
+        
+        if data:
+            return True
+        else:
+            return False
+    except Exception as e:
+        raise HTTPException(500,f"Error get data for user existance due to {e}")

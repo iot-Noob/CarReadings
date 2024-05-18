@@ -32,11 +32,12 @@ async def get_password_hash(password):
  
 
 async def get_user(username: str):
-    user_data = await RunQuery("SELECT username "" FROM user WHERE username = ?", (username,), sqmq=False, rom=True)
+    user_data = await RunQuery("SELECT username FROM user WHERE username = ?", (username,), sqmq=False, rom=False)
     if not user_data:
         return None  # No user found with the given username
-    user_dict = dict(user_data[0])
-    return UserInDB(*user_dict)
+    else:
+        return user_data
+
 
 
 async def authenticate_user(username: str, password: str):
@@ -98,8 +99,26 @@ async def get_current_user(token: str = Depends(http_bearer)):
 async def decode_jwt(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+   
         return payload
     except JWTError as e:
         return None
 
- 
+async def user_exist(tokens):
+    try:   
+        
+        cuid = tokens['id']
+        cuname=tokens['username']
+        cue = await RunQuery(
+            q="""SELECT id FROM user WHERE id=? AND username=?  """,
+            val=(cuid,cuname  ),
+            sqmq=False,
+            rom=False
+        )
+        if cue:
+            return True
+        else:
+            return False
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error occurred while checking user existence: {e}")
+
