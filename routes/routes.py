@@ -67,7 +67,7 @@ async def startup_event():
     await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate(),User_License_Plate(),UserOilEntry(),OilUserRelation())
       
 
-@basicRoutes.post("/login", tags=['User auth'], description="Login account with username and password") 
+@basicRoutes.post("/login", tags=['User Authentication'], description="Login account with username and password") 
 async def login(user_login: UserLogin):
     user_data = await authenticate_user(user_login.username, user_login.password)
     if user_data:
@@ -77,7 +77,7 @@ async def login(user_login: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
 
-@basicRoutes.post("/signup",tags=['User auth'], description="Sign up your account")
+@basicRoutes.post("/signup",tags=['User Authentication'], description="Sign up your account")
 async def signup(user: User):
     try:
         hp = await get_password_hash(user.password)  # Hash the user's password
@@ -92,7 +92,7 @@ async def signup(user: User):
     except Exception as e:
         raise HTTPException(500, f"Failed to create account: {str(e)}")
 
-@basicRoutes.delete("/delete_account",tags=['User auth'],description="Delete account permenently add current username and password to delete as deletion is senstivve  process require auth if you are a real user ",name="Delete account") 
+@basicRoutes.delete("/delete_account",tags=['User Authentication'],description="Delete account permenently add current username and password to delete as deletion is senstivve  process require auth if you are a real user ",name="Delete account") 
 async def delete_account(token:str=Depends(get_current_user),passwd:str=Form(...),username:str=Form(...)):
     ue=await user_exist(tokens=token)
  
@@ -112,11 +112,10 @@ async def delete_account(token:str=Depends(get_current_user),passwd:str=Form(...
     else:
         raise HTTPException(404,"No such user exist to delete.")
 
-@basicRoutes.patch("/update_profile", tags=['User Profile'], description="Update user profile information partially")
+@basicRoutes.patch("/update_profile", tags=['Account Settings'], description="Update user profile information partially")
 async def update_profile(profile_update: UserProfileUpdate, token: str = Depends(get_current_user)):
     try:
         vt=await user_exist(tokens=token)
-       
         if vt==False:
             raise HTTPException(404,"Invalid token no such user exist!!!")
         # Construct the update query based on the fields provided in the request
@@ -184,7 +183,7 @@ async def Insert_OE(current_id,cln):
         raise HTTPException(500,f"Error entry for oil due to ::: {e}")
 
 ### Insert data to oil
-@basicRoutes.post("/AddOilInfo",tags=['Car Oil data menuplation'],name="Oil info add",description="User basic oil info add to database")
+@basicRoutes.post("/AddOilInfo",tags=['Data Entry endpoint'],name="Oil info add",description="User basic oil info add to database")
 async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_user)):
     if not await user_exist(tokens=token):
         raise HTTPException(404,"Invalid token no such user exist")
@@ -285,11 +284,22 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
 
 ### Update items
  
-@basicRoutes.patch("/update_oil_info", tags=['Car Oil data menuplation'], name="Oil info Update", description="Update user data oil info only specific fields")
+@basicRoutes.patch("/update_oil_info", tags=['Data Entry endpoint'], name="Oil info Update", description="Update user data oil info only specific fields")
 async def update_info(id:int,data: CarOilInfoUpdater, token: str = Depends(get_current_user)):
     cuid = token['id']
     if not await user_exist(tokens=token):
         raise HTTPException(404,"Invalid token no such user exist")
+   
+    uide=await RunQuery(q="""
+                          SELECT 1  FROM Oil_Change OC
+                          JOIN UserOil UO ON OC.id = UO.oil_id
+                          WHERE OC.id =? AND UO.user_id = ?
+                          """,
+                          val=(id,cuid),
+                          sqmq=False,
+                          rom=False)
+    if not uide:
+        raise HTTPException(500,"User not allowed to  update that or entry dont exist!!")
     # Initialize an empty list to store the update query parameters
     update_values = []
 
@@ -369,11 +379,22 @@ async def update_info(id:int,data: CarOilInfoUpdater, token: str = Depends(get_c
         raise HTTPException(status_code=500, detail=f"Failed to update oil information: {str(e)}")
 
 ##Update licance
-@basicRoutes.patch("/update_license_number", tags=['Car Oil data menuplation'], name="Update License Number", description="Update the license number associated with oil change information")
+@basicRoutes.patch("/update_license_number", tags=['Data Entry endpoint'], name="Update License Number", description="Update the license number associated with oil change information")
 async def update_license_number(ld: LicancePlateInfoUpdater, token: str = Depends(get_current_user)):
     cuid = token['id']
     if not await user_exist(tokens=token):
         raise HTTPException(404,"Invalid token no such user exist")
+    uide=await RunQuery(q="""
+                            SELECT 1
+                            FROM License_Plate LP
+                            JOIN user u ON LP.uid = u.id
+                            WHERE LP.id = ? AND LP.license_number = ?;
+                          """,
+                          val=(cuid,ld.license_number),
+                          sqmq=False,
+                          rom=False)
+    if not uide:
+        raise HTTPException(500,"User not allowed to  update that or entry dont exist!!")
     try:
         # Construct the SQL query to update the license number
         update_query = """
@@ -386,7 +407,7 @@ async def update_license_number(ld: LicancePlateInfoUpdater, token: str = Depend
                 WHERE ulp.user_id = ?)
         """
         # Execute the query
-        await RunQuery(update_query, (ld.license_number, cuid))
+        await RunQuery(update_query, (ld.old_license_number, cuid))
 
         return {"message": "License number updated successfully"}
     except Exception as e:
@@ -397,7 +418,7 @@ async def update_license_number(ld: LicancePlateInfoUpdater, token: str = Depend
 
 ### Get all data of current user
  
-@basicRoutes.get("/get_all", tags=['Car Oil data Get'], name='Get all data of car oil', description='all cars data and oil related info of nomatter how many car you have' )
+@basicRoutes.get("/get_all", tags=['Data Fetch Endpoint'], name='Get all data of car oil', description='all cars data and oil related info of nomatter how many car you have' )
 async def get_all(token: str = Depends(get_current_user)):
     try:
         cuid = token['id']
@@ -532,7 +553,7 @@ async def get_all(licance: str = Query(..., title="Search by license plate", des
     
 ### Get LICENCE number for current user
 
-@basicRoutes.get('/get_license_number', tags=['get_licence_plate_info'])
+@basicRoutes.get('/get_license_number', tags=['Data Fetch Endpoint'])
 async def get_licence(token: str = Depends(get_current_user)):
     try:
         cuid = token['id']
@@ -566,7 +587,7 @@ async def get_licence(token: str = Depends(get_current_user)):
 
 ### Alert of oil change date when dates are same
 
-@basicRoutes.get(path="/get_alert", tags=['get alert'], name="Get alert for oil change")
+@basicRoutes.get(path="/get_alert", tags=['Data Fetch Endpoint'], name="Get alert for oil change")
 async def get_alert(token: str = Depends(get_current_user)):
     try:
         rd = []
@@ -603,16 +624,51 @@ async def get_alert(token: str = Depends(get_current_user)):
 
 ## Delete specific record
 
-@basicRoutes.delete("/delete_record",tags=['Car Oil data menuplation'],name="Delete a specifivc record ")
-async def delete_record(license:str,token:str=Depends(get_current_user)):
+@basicRoutes.delete("/delete_record", tags=['Data Dangerzone Endpoint'], name="Delete a specific record")
+async def delete_record(oil_id: int, token: str = Depends(get_current_user)):
     try:
-        uid=token['id']
+        uid = token['id']
+        
+        # Check if the user exists
         if not await user_exist(tokens=token):
-            raise HTTPException(404,"User dont exist or using invalid token")
-        query=""" SELECT """
-        dq1=await RunQuery(q=query,val=(),sqmq=False,rom=False)
+            raise HTTPException(404, "User doesn't exist or is using an invalid token")
+        
+        # Check if the provided oil_id exists for the current user
+        check_query = """
+                      SELECT 1  FROM Oil_Change OC
+                      JOIN UserOil UO ON OC.id = UO.oil_id
+                      WHERE OC.id = ? AND UO.user_id = ?
+                      """
+        check_result = await RunQuery(q=check_query, val=(oil_id, uid), rom=False, sqmq=False)
+        if not check_result:
+            raise HTTPException(404, "The specified record doesn't exist or you don't have permission to delete it")
+        goid = await RunQuery(q="""
+                            SELECT OC.id FROM Oil_Change OC
+                            JOIN UserOil UO ON OC.id = UO.oil_id
+                            WHERE OC.id = ? AND UO.user_id = ?
+                            """, val=(oil_id, uid), sqmq=False, rom=False)
+
+        # Delete the record from the Oil_Change table
+        delete_query = "DELETE FROM Oil_Change WHERE id = ?"
+        await RunQuery(q=delete_query, val=(oil_id,), rom=False, sqmq=False)
+        doe=await RunQuery(q="""
+                             DELETE FROM OilEntry WHERE oil_id=?
+                             """,
+                             rom=False,
+                             sqmq=False,
+                             val=(goid[0],))
+        duo=await RunQuery(q="""
+                             DELETE FROM UserOil WHERE oil_id=?
+                             """,
+                             rom=False,
+                             sqmq=False,
+                             val=(goid[0],))
+        return {"message": "Record deleted successfully"}
+    except HTTPException as http_exc:
+        raise http_exc
     except Exception as e:
-        raise HTTPException(500,f"Error occur delete record due to {e}")
+        raise HTTPException(500, f"Error occurred while deleting record: {e}")
+ 
 
 ### Check user exist21
 

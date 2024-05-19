@@ -74,7 +74,7 @@ async def User_License_Plate():
                 license_plate_id INTEGER, 
                 FOREIGN KEY (user_id) REFERENCES User(id),
                 FOREIGN KEY (license_plate_id) REFERENCES License_Plate(id) 
-            )
+            );
         """)
     except Exception as e:
         print("Failed to create User_License_Plate table: ", e)

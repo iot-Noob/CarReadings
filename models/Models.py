@@ -103,4 +103,11 @@ class CarOilInfoUpdater(BaseModel):
             raise ValueError('Next oil change date should not be the same as oil change date')
 
 class LicancePlateInfoUpdater(BaseModel):
-    license_number:str 
+    license_number: str
+    old_license_number: str 
+    
+    @validator('old_license_number')
+    def validate_next_oilChange_date(cls, value, values):
+        if 'license_number' in values and value == values['license_number']:
+            raise ValueError('License number should not match the old one')
+        return value
