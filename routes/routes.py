@@ -64,7 +64,7 @@ async def delete_all(token):
 async def startup_event():
     main()
     print("API IS Starting....")
-    await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate(),User_License_Plate(),UserOilEntry())
+    await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate(),User_License_Plate(),UserOilEntry(),OilUserRelation())
       
 
 @basicRoutes.post("/login", tags=['User auth'], description="Login account with username and password") 
@@ -95,7 +95,7 @@ async def signup(user: User):
 @basicRoutes.delete("/delete_account",tags=['User auth'],description="Delete account permenently add current username and password to delete as deletion is senstivve  process require auth if you are a real user ",name="Delete account") 
 async def delete_account(token:str=Depends(get_current_user),passwd:str=Form(...),username:str=Form(...)):
     ue=await user_exist(tokens=token)
-    print("user exist::: ",ue)
+ 
     if not ue:
         raise HTTPException(404,"Invalid token no such user exist")
     
@@ -115,6 +115,10 @@ async def delete_account(token:str=Depends(get_current_user),passwd:str=Form(...
 @basicRoutes.patch("/update_profile", tags=['User Profile'], description="Update user profile information partially")
 async def update_profile(profile_update: UserProfileUpdate, token: str = Depends(get_current_user)):
     try:
+        vt=await user_exist(tokens=token)
+       
+        if vt==False:
+            raise HTTPException(404,"Invalid token no such user exist!!!")
         # Construct the update query based on the fields provided in the request
         update_query = "UPDATE user SET"
         update_values = []
@@ -182,6 +186,8 @@ async def Insert_OE(current_id,cln):
 ### Insert data to oil
 @basicRoutes.post("/AddOilInfo",tags=['Car Oil data menuplation'],name="Oil info add",description="User basic oil info add to database")
 async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_user)):
+    if not await user_exist(tokens=token):
+        raise HTTPException(404,"Invalid token no such user exist")
     rq2=None
     try:
         cuid=token['id']
@@ -232,7 +238,8 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
             rom=False  # Corrected to True to return the result as a list of dictionaries
         )
         
-       
+        iuor=await RunQuery(q="""INSERT INTO UserOil(oil_id,user_id) VALUES (?,?)""",val=(goid[0],cuid),sqmq=False,rom=False)
+        
 
         if_le=await RunQuery(q="""
                              SELECT License_Plate.id 
@@ -246,19 +253,21 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
         if not if_le:
             print(f"NEWLY ENTER DATA OIL ID :::: ",goid[0])
             rq2 = await RunQuery(
-                q="""INSERT INTO License_Plate (license_number, uid, oid)
-                    VALUES (?, ?, ?);""",
-                val=(add_info.license_number, cuid, goid[0]),  
+                q="""INSERT INTO License_Plate (license_number, uid)
+                    VALUES (?, ?);""",
+                val=(add_info.license_number, cuid),  
                 sqmq=False,
                 rom=False
                 )
             licance_id=await RunQuery(q="""
-                                    SELECT LP.id
-                                    FROM License_Plate LP
-                                    JOIN Oil_Change OC ON LP.oid = OC.id
-                                    WHERE OC.cuid = ?
-                                    ORDER BY LP.id DESC
-                                    LIMIT 1""",
+                                   SELECT LP.id
+                                   FROM License_Plate LP
+                                   JOIN UserOil UO ON LP.uid = UO.user_id
+                                   JOIN Oil_Change OC ON UO.oil_id = OC.id
+                                   WHERE UO.user_id = ?
+                                   ORDER BY LP.id DESC
+                                   LIMIT 1
+                                   """,
                                         val=(cuid,),rom=False,sqmq=False
                                     )
  
@@ -279,7 +288,8 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
 @basicRoutes.patch("/update_oil_info", tags=['Car Oil data menuplation'], name="Oil info Update", description="Update user data oil info only specific fields")
 async def update_info(id:int,data: CarOilInfoUpdater, token: str = Depends(get_current_user)):
     cuid = token['id']
-    
+    if not await user_exist(tokens=token):
+        raise HTTPException(404,"Invalid token no such user exist")
     # Initialize an empty list to store the update query parameters
     update_values = []
 
@@ -362,7 +372,8 @@ async def update_info(id:int,data: CarOilInfoUpdater, token: str = Depends(get_c
 @basicRoutes.patch("/update_license_number", tags=['Car Oil data menuplation'], name="Update License Number", description="Update the license number associated with oil change information")
 async def update_license_number(ld: LicancePlateInfoUpdater, token: str = Depends(get_current_user)):
     cuid = token['id']
-
+    if not await user_exist(tokens=token):
+        raise HTTPException(404,"Invalid token no such user exist")
     try:
         # Construct the SQL query to update the license number
         update_query = """
@@ -390,6 +401,8 @@ async def update_license_number(ld: LicancePlateInfoUpdater, token: str = Depend
 async def get_all(token: str = Depends(get_current_user)):
     try:
         cuid = token['id']
+        if not await user_exist(tokens=token):
+            raise HTTPException(404,"Invalid token no such user exist")
         all_data = await RunQuery(
             q=f"""
                 SELECT 
@@ -456,6 +469,8 @@ async def get_all(token: str = Depends(get_current_user)):
 async def get_all(licance: str = Query(..., title="Search by license plate", description="Search oil data by license plate number"), token: str = Depends(get_current_user)):
     try:
         cuid = token['id']
+        if not await user_exist(tokens=token):
+            raise HTTPException(404,"Invalid token no such user exist")
         all_data = await RunQuery(
             q="""
                SELECT 
@@ -522,7 +537,8 @@ async def get_licence(token: str = Depends(get_current_user)):
     try:
         cuid = token['id']
         dd = []
-        
+        if not await user_exist(tokens=token):
+            raise HTTPException(404,"Invalid token no such user exist")
         # Ensure that the parameter is passed as a tuple, even if it contains only one value
         licno = await RunQuery(
             q="""SELECT LP.id, LP.license_number
@@ -555,7 +571,8 @@ async def get_alert(token: str = Depends(get_current_user)):
     try:
         rd = []
         uid = token['id']
-     
+        if not await user_exist(tokens=token):
+            raise HTTPException(404,"Invalid token no such user exist")
         current_date = datetime.now().strftime("%d-%m-%y")
         print(current_date, type(current_date))
         ddata = await RunQuery(
@@ -584,6 +601,20 @@ async def get_alert(token: str = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(500, f"Failed to retrieve data for oil change alerts: {e}")
 
+## Delete specific record
+
+@basicRoutes.delete("/delete_record",tags=['Car Oil data menuplation'],name="Delete a specifivc record ")
+async def delete_record(license:str,token:str=Depends(get_current_user)):
+    try:
+        uid=token['id']
+        if not await user_exist(tokens=token):
+            raise HTTPException(404,"User dont exist or using invalid token")
+        query=""" SELECT """
+        dq1=await RunQuery(q=query,val=(),sqmq=False,rom=False)
+    except Exception as e:
+        raise HTTPException(500,f"Error occur delete record due to {e}")
+
+### Check user exist21
 
 @basicRoutes.get(path='/user_exist',tags=['Debug'])
 async def user_exists(token:str=Depends(get_current_user)):
@@ -596,3 +627,5 @@ async def user_exists(token:str=Depends(get_current_user)):
             return False
     except Exception as e:
         raise HTTPException(500,f"Error get data for user existance due to {e}")
+    
+
