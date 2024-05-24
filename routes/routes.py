@@ -8,64 +8,16 @@ from models.Models import User,UserLogin,UserProfileUpdate,LicancePlateInfo ,Car
 from security.Security import *
 from config.connectDb import RunQuery,db_path 
 from datetime import datetime
-
+from App.DeleteQuery import *
 basicRoutes = APIRouter()
 
-async def delete_all(token):
-    try:
-        uid = token['id']
-        
-        # Delete data from User_License_Plate table
-        await RunQuery(
-            q="DELETE FROM User_License_Plate WHERE user_id = ?",
-            val=(uid,),
-            sqmq=False,
-            rom=False
-        )
-
-        # Delete data from OilEntry table
-        await RunQuery(
-            q="DELETE FROM OilEntry WHERE license_plate_id IN (SELECT id FROM License_Plate WHERE uid = ?)",
-            val=(uid,),
-            sqmq=False,
-            rom=False
-        )
-
-        # Delete data from License_Plate table
-        await RunQuery(
-            q="DELETE FROM License_Plate WHERE uid = ?",
-            val=(uid,),
-            sqmq=False,
-            rom=False
-        )
-
-        # Delete data from Oil_Change table
-        await RunQuery(
-            q="DELETE FROM Oil_Change WHERE cuid = ?",
-            val=(uid,),
-            sqmq=False,
-            rom=False
-        )
-
-        # Delete data from User table
-        await RunQuery(
-            q="DELETE FROM user WHERE id = ?",
-            val=(uid,),
-            sqmq=False,
-            rom=False
-        )
-
-    except Exception as e:
-        raise HTTPException(500, f"Failed to delete all data: {e}")
-
-
-
+ 
 @basicRoutes.on_event('startup')
 async def startup_event():
-    main()
+    # main()
     print("API IS Starting....")
     await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate(),User_License_Plate(),UserOilEntry(),OilUserRelation())
-      
+ 
 
 @basicRoutes.post("/login", tags=['User Authentication'], description="Login account with username and password") 
 async def login(user_login: UserLogin):
@@ -189,8 +141,24 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
         raise HTTPException(404,"Invalid token no such user exist")
     rq2=None
     try:
+
         cuid=token['id']
 
+        if_le=await RunQuery(q="""
+                             SELECT License_Plate.id,License_Plate.license_number
+                             FROM License_Plate 
+                             INNER JOIN User_License_Plate ON License_Plate.id =    User_License_Plate.license_plate_id 
+                             WHERE User_License_Plate.user_id = ? 
+                             AND License_Plate.license_number =?;
+                             """,val=(cuid,add_info.license_number)) ### Check if license exist then make entry
+     
+        
+        culid=await user_license_check(license=add_info.license_number)
+   
+        if culid['user_id'] and  culid['user_id']!=cuid:
+            
+            raise HTTPException(400,"Uer already register that license plate")
+  
         rq = await RunQuery(
             q=""" INSERT INTO Oil_Change (
                   car_name,
@@ -240,15 +208,11 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
         iuor=await RunQuery(q="""INSERT INTO UserOil(oil_id,user_id) VALUES (?,?)""",val=(goid[0],cuid),sqmq=False,rom=False)
         
 
-        if_le=await RunQuery(q="""
-                             SELECT License_Plate.id 
-                             FROM License_Plate 
-                             INNER JOIN User_License_Plate ON License_Plate.id = User_License_Plate.license_plate_id 
-                             WHERE User_License_Plate.user_id = ? 
-                             AND License_Plate.license_number =?;
-                             """,val=(cuid,add_info.license_number))
+
         if if_le:
              await Insert_OE(cuid,add_info.license_number)
+ 
+             
         if not if_le:
             print(f"NEWLY ENTER DATA OIL ID :::: ",goid[0])
             rq2 = await RunQuery(
@@ -486,7 +450,7 @@ async def get_all(token: str = Depends(get_current_user)):
         raise HTTPException(500, f"Error retrieving car oil data: {e}")
  
  ## Get  by licance plate
-@basicRoutes.get("/get_by_licance", tags=['Car Oil data Get'], name='Get data by license number', description='Search by license plate')
+@basicRoutes.get("/get_by_licance", tags=['Data Fetch Endpoint'], name='Get data by license number', description='Search by license plate')
 async def get_all(licance: str = Query(..., title="Search by license plate", description="Search oil data by license plate number"), token: str = Depends(get_current_user)):
     try:
         cuid = token['id']
@@ -624,7 +588,7 @@ async def get_alert(token: str = Depends(get_current_user)):
 
 ## Delete specific record
 
-@basicRoutes.delete("/delete_record", tags=['Data Dangerzone Endpoint'], name="Delete a specific record")
+@basicRoutes.delete("/delete_record", tags=['Data Fetch Endpoint'], name="Delete a specific record")
 async def delete_record(oil_id: int, token: str = Depends(get_current_user)):
     try:
         uid = token['id']
@@ -668,10 +632,48 @@ async def delete_record(oil_id: int, token: str = Depends(get_current_user)):
         raise http_exc
     except Exception as e:
         raise HTTPException(500, f"Error occurred while deleting record: {e}")
- 
 
-### Check user exist21
+### Delete Licence number delete all data connect to That licnece number...
 
+@basicRoutes.delete(path="/delete_license", name="Delete licence number", description="Delete license number and all data associated with it", tags=['Data Fetch Endpoint'])
+async def delete_license(license_no: str, username: str, password: str, token: str = Depends(get_current_user)):
+    cuid = token['id']
+    try:
+        # Check if the user exists
+        if not await user_exist(tokens=token):
+            raise HTTPException(404, "User can't make changes, token not valid or expired or account been removed!!")
+        
+        # Authenticate user
+        au = await authenticate_user(username=username, password=password)
+        if not au:
+            raise HTTPException(404, "You are not authenticated to delete this account or your username password credentials are not correct")
+        vlc=await user_license_check(license=license_no)
+        if vlc and vlc['user_id']!=cuid:
+            raise HTTPException(500,"You are not allow to delete this licence!! not your license plate")
+        # Get license plate ID associated with the user
+        gclpid = await RunQuery(q="""
+                                SELECT LP.id 
+                                FROM License_Plate LP 
+                                JOIN User_License_Plate ulp ON LP.id = ulp.license_plate_id
+                                JOIN User u ON ulp.user_id = u.id
+                                WHERE u.id = ? AND LP.license_number = ?;
+                                """, val=(cuid, license_no), sqmq=False, rom=False)
+        if not gclpid:
+            raise HTTPException(404, "No user license plate exists")
+        
+        for ind,qu in enumerate(queries):
+            try:
+                if ind==4:
+                  qr=await RunQuery(q=qu,val=(cuid,cuid,license_no))
+                else:  
+                  qr=await RunQuery(q=qu,val=(cuid,license_no))
+            except Exception as e:
+                raise HTTPException(500,f"Error occur at query {qu} due to {e} at index {ind}")
+
+        return Response(f"Deletion sucess!!" ,200)
+        
+    except Exception as e:
+        raise HTTPException(500,f"Error occur delete record due to {e}")
 @basicRoutes.get(path='/user_exist',tags=['Debug'])
 async def user_exists(token:str=Depends(get_current_user)):
     try:

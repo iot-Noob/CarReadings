@@ -96,12 +96,12 @@ async def UserOilEntry(): ## For same oil entry on same licence plate
 async def OilUserRelation():
      try:
           await RunQuery(q="""
-                              CREATE TABLE IF NOT EXISTS UserOil (
-                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                oil_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
-                FOREIGN KEY (oil_id) REFERENCES Oil_Change(id),
-                FOREIGN KEY (user_id) REFERENCES user(id)
+                            CREATE TABLE IF NOT EXISTS UserOil (
+                            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                            oil_id INTEGER NOT NULL,
+                            user_id INTEGER NOT NULL,
+                            FOREIGN KEY (oil_id) REFERENCES Oil_Change(id),
+                            FOREIGN KEY (user_id) REFERENCES user(id)
                            )
                             
                            """,
@@ -111,3 +111,4 @@ async def OilUserRelation():
           pass
      except Exception as e:
           print("Error occur creating oil user table due to ",e)
+

@@ -122,3 +122,55 @@ async def user_exist(tokens):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error occurred while checking user existence: {e}")
 
+async def user_validate_token(tokens:str,lno:str) -> dict[str, any]:
+    try:   
+        cuid = tokens['id']
+        cuname = tokens['username']
+        cue = await RunQuery(
+            q="SELECT id FROM user WHERE id=? AND username=?",
+            val=(cuid, cuname),
+            sqmq=False,
+            rom=True
+        )
+        if cue:
+            lpd=await RunQuery(q="""
+                                SELECT ULP.license_number, ULP.id
+                                FROM License_Plate ULP
+                                JOIN User_License_Plate ULP_JOIN ON ULP.id = ULP_JOIN.license_plate_id
+                                JOIN User U ON U.id = ULP_JOIN.user_id
+                                WHERE U.id = ?  AND ULP.license_number =?; 
+                                  """,
+                                  val=(cuid,lno),
+                                  rom=False,
+                                  sqmq=False)
+            if lpd:
+                return {"username": cuname, "id": cuid,"lno":lpd[0],"lid":lpd[1]}
+            else:
+                return None
+        else:
+            raise HTTPException(404,"user dont exist sorry")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error occurred while checking user existence: {e}")
+    
+async def user_license_check(license: str) -> dict:
+    try:
+        query = """
+            SELECT
+                lp.id AS license_plate_id,
+                ulp.user_id
+            FROM
+                License_Plate lp
+            JOIN
+                User_License_Plate ulp ON lp.id = ulp.license_plate_id
+            WHERE
+                lp.license_number = ?
+        """
+        result = await RunQuery(q=query, val=(license,), rom=True, sqmq=False)
+        
+        if not result:
+            return {"license_plate_id": None, "user_id": None}
+        
+        return {"license_plate_id": result[0][0], "user_id": result[0][1]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error occurred while checking user license: {e}")
+
