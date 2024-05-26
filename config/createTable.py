@@ -1,5 +1,5 @@
 from config.connectDb import RunQuery
-
+#from config.MysqlConnector import RunQuery ##MYSQL Server via sql.connector
 async def UserTable():
     try:
         await RunQuery(q="""

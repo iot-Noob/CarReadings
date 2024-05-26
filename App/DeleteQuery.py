@@ -1,62 +1,62 @@
 from config.connectDb import *
+#from config.MysqlConnector import RunQuery ##MYSQL Server via sql.connector
 
+async def dinfo(info:str,index:int):
+    dinfo=[
+    f"Delete UserOil table {info if info else ""}",
+    f"Delete User_License_Plate table {info if info else ""}",
+    f"Delete Oil_Change table {info if info else ""}",
+    f"Delete OilEntry table {info if info else ""}",
+    f"Delete License_Plate table {info if info else ""}", 
+          ]
+    return dinfo[index]
 queries=[
-"""
-DELETE FROM Oil_Change
-WHERE id IN (
-SELECT Oil_Change.id
-FROM Oil_Change
-JOIN OilEntry ON Oil_Change.id = OilEntry.oil_id
-JOIN License_Plate ON OilEntry.license_plate_id = License_Plate.id
-JOIN User_License_Plate ON License_Plate.id = User_License_Plate.license_plate_id
-JOIN User ON User_License_Plate.user_id = User.id
-WHERE   User.id =? AND License_Plate.license_number = ?
-); 
-""",
-
-"""
-DELETE FROM OilEntry
-WHERE license_plate_id IN (
-SELECT lp.id
-FROM License_Plate lp
-JOIN User_License_Plate ulp ON lp.id = ulp.license_plate_id
-WHERE ulp.user_id = ? AND lp.license_number = ?
-);
-""",
-
 """
 DELETE FROM UserOil
 WHERE oil_id IN (
-SELECT oc.id
-FROM Oil_Change oc
-FULL JOIN License_Plate lp ON oc.cuid = lp.uid
-WHERE lp.uid =? AND lp.license_number =?
+    SELECT oe.oil_id
+    FROM OilEntry oe
+    INNER JOIN License_Plate lp ON oe.license_plate_id = lp.id
+    WHERE lp.license_number = ?
 );
 """,
 
 """
 DELETE FROM User_License_Plate
 WHERE license_plate_id IN (
-SELECT lp.id
-FROM License_Plate lp
-WHERE lp.uid = ?  AND lp.license_number = ?
+    SELECT lp.id
+    FROM License_Plate lp
+    INNER JOIN OilEntry oe ON lp.id = oe.license_plate_id
+    WHERE lp.license_number = ?
 );
 """,
 
 """
-DELETE FROM Oil_Change
-WHERE cuid = ? AND id IN (
+ DELETE FROM Oil_Change 
+WHERE id IN (
     SELECT oc.id
-    FROM Oil_Change oc
-    JOIN License_Plate lp ON oc.cuid = lp.uid
-    WHERE lp.uid = ? AND lp.license_number = ?
+    FROM OilEntry
+    INNER JOIN Oil_Change oc ON OilEntry.oil_id = oc.id
+    INNER JOIN License_Plate lp ON OilEntry.license_plate_id = lp.id
+    WHERE lp.license_number =?
 );
 """,
 
 """
-DELETE FROM License_Plate
-WHERE uid =? AND license_number =?;
+DELETE FROM OilEntry 
+WHERE id IN (
+    SELECT oe.id 
+    FROM OilEntry oe 
+    LEFT JOIN License_Plate lp ON oe.license_plate_id = lp.id 
+    WHERE lp.license_number =?
+);
+""",
+
 """
+DELETE FROM License_Plate 
+WHERE uid = ?
+  AND license_number = ?;
+""" 
 
 ]
 

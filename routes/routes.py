@@ -6,9 +6,11 @@ from config.createTable import *
 import asyncio
 from models.Models import User,UserLogin,UserProfileUpdate,LicancePlateInfo ,CarOilInfoUpdater,LicancePlateInfoUpdater
 from security.Security import *
-from config.connectDb import RunQuery,db_path 
+from config.connectDb import RunQuery,db_path  ##Create sqlite db locally
 from datetime import datetime
 from App.DeleteQuery import *
+import time
+#from config.MysqlConnector import RunQuery ## If you want to connect to mysql db via server
 basicRoutes = APIRouter()
 
  
@@ -664,12 +666,16 @@ async def delete_license(license_no: str, username: str, password: str, token: s
         for ind,qu in enumerate(queries):
             try:
                 if ind==4:
-                  qr=await RunQuery(q=qu,val=(cuid,cuid,license_no))
+                  print(await dinfo(info=f"{qr if qr else ""} Deleted!! ",index=ind))
+                  qr = await RunQuery(q=qu, val=(cuid, license_no))
+                  await asyncio.sleep(1)
                 else:  
-                  qr=await RunQuery(q=qu,val=(cuid,license_no))
+                  qr=await RunQuery(q=qu,val=(license_no,))
+             
+                  print(await dinfo(info=f"{qr if qr else ""} Deleted!! ",index=ind))
             except Exception as e:
                 raise HTTPException(500,f"Error occur at query {qu} due to {e} at index {ind}")
-
+ 
         return Response(f"Deletion sucess!!" ,200)
         
     except Exception as e:

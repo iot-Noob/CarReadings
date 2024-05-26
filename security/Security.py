@@ -9,6 +9,7 @@ from jose import JWTError, jwt
 import bcrypt
 from models.Models import   User, UserInDB 
 from config.connectDb import RunQuery
+#from config.MysqlConnector import RunQuery ##MYSQL Server via sql.connector
 import datetime
 
 load_dotenv()
