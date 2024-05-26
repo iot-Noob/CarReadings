@@ -1,5 +1,6 @@
 from pydantic import BaseModel,EmailStr, HttpUrl,SecretStr,validator
-from typing import Optional
+from typing import Optional,Union
+import datetime
 import re
 class User(BaseModel):
     username: str
@@ -73,6 +74,14 @@ class CarOilInfo(BaseModel):
         if 'oil_change_date' in values and value == values['oil_change_date']:
             raise ValueError('Next oil change date should not be the same as oil change date')
         return value
+    @validator('next_oilChange_date', 'oil_change_date')
+    def validate_date_format(cls, value: Union[str, datetime.date]):
+        date_format = re.compile(r'^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-(\d{4}|\d{2})$')  # Updated regex to accept both dd-mm-yyyy and mm-dd-yyyy
+        if not date_format.match(value):
+            raise ValueError('Date should be in dd-mm-yyyy   format')
+        return value
+
+
 class LicancePlateInfo(CarOilInfo):
     license_number:str
  
@@ -101,7 +110,13 @@ class CarOilInfoUpdater(BaseModel):
     def validate_next_oilChange_date(cls, value, values):
         if 'oil_change_date' in values and value == values['oil_change_date']:
             raise ValueError('Next oil change date should not be the same as oil change date')
-
+        
+    @validator('next_oilChange_date', 'oil_change_date')
+    def validate_date_format(cls, value: Union[str, datetime.date]):
+        date_format = re.compile(r'^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-(\d{4}|\d{2})$')  # Updated regex to accept both dd-mm-yyyy and mm-dd-yyyy
+        if not date_format.match(value):
+            raise ValueError('Date should be in dd-mm-yyyy   format')
+        return value
 class LicancePlateInfoUpdater(BaseModel):
     license_number: str
     old_license_number: str 

@@ -175,9 +175,10 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
                   total_cost,
                   oil_vander,
                   oil_change_date,
+                  next_oilChange_date,
                   notes,
                   cuid   )
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)""",
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?)""",
             val=(
                 add_info.car_name, 
                 add_info.car_model,
@@ -191,6 +192,7 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
                 add_info.oil_filter,
                 add_info.ac_filter,
                 add_info.oil_change_date,
+                add_info.next_oilChange_date,
                 add_info.notes,
                 cuid
             ),
@@ -216,7 +218,7 @@ async def add_oil_info(add_info:LicancePlateInfo,token:str=Depends(get_current_u
  
              
         if not if_le:
-            print(f"NEWLY ENTER DATA OIL ID :::: ",goid[0])
+            # print(f"NEWLY ENTER DATA OIL ID :::: ",goid[0])
             rq2 = await RunQuery(
                 q="""INSERT INTO License_Plate (license_number, uid)
                     VALUES (?, ?);""",
@@ -552,7 +554,8 @@ async def get_licence(token: str = Depends(get_current_user)):
 
 
 ### Alert of oil change date when dates are same
-
+ 
+ 
 @basicRoutes.get(path="/get_alert", tags=['Data Fetch Endpoint'], name="Get alert for oil change")
 async def get_alert(token: str = Depends(get_current_user)):
     try:
@@ -561,7 +564,8 @@ async def get_alert(token: str = Depends(get_current_user)):
         if not await user_exist(tokens=token):
             raise HTTPException(404,"Invalid token no such user exist")
         current_date = datetime.now().strftime("%d-%m-%y")
-        print(current_date, type(current_date))
+    
+        
         ddata = await RunQuery(
             q="""SELECT 
                     OC.car_name,
@@ -576,15 +580,17 @@ async def get_alert(token: str = Depends(get_current_user)):
             sqmq=False,
             rom=True
         )
-
+     
         for d in ddata:
             rd.append({"car_name": d[0], "current_date": d[1], "next_date": d[2]})
 
         if rd:
+            
             return rd
         else:
+         
             return {"message": "No oil change alerts found for today."}
-
+    
     except Exception as e:
         raise HTTPException(500, f"Failed to retrieve data for oil change alerts: {e}")
 
