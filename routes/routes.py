@@ -680,6 +680,7 @@ async def delete_license(license_no: str, username: str, password: str, token: s
         
     except Exception as e:
         raise HTTPException(500,f"Error occur delete record due to {e}")
+## Debug
 @basicRoutes.get(path='/user_exist',tags=['Debug'])
 async def user_exists(token:str=Depends(get_current_user)):
     try:
