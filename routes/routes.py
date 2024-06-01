@@ -20,6 +20,7 @@ async def startup_event():
     print("API IS Starting....")
     await asyncio.gather(UserTable(), OilDateTable(), Licance_Plate(),User_License_Plate(),UserOilEntry(),OilUserRelation())
  
+### Login Account
 
 @basicRoutes.post("/login", tags=['User Authentication'], description="Login account with username and password") 
 async def login(user_login: UserLogin):
@@ -29,7 +30,7 @@ async def login(user_login: UserLogin):
         return {"access_token": access_token, "token_type": "bearer"}
     else:
         raise HTTPException(status_code=401, detail="Invalid username or password")
-
+##Signup account
 
 @basicRoutes.post("/signup",tags=['User Authentication'], description="Sign up your account")
 async def signup(user: User):
@@ -45,7 +46,7 @@ async def signup(user: User):
         return {f"Query sucess account created {q if q else ""}"}
     except Exception as e:
         raise HTTPException(500, f"Failed to create account: {str(e)}")
-
+### Delete current account of user
 @basicRoutes.delete("/delete_account",tags=['User Authentication'],description="Delete account permenently add current username and password to delete as deletion is senstivve  process require auth if you are a real user ",name="Delete account") 
 async def delete_account(token:str=Depends(get_current_user),passwd:str=Form(...),username:str=Form(...)):
     ue=await user_exist(tokens=token)
@@ -65,7 +66,7 @@ async def delete_account(token:str=Depends(get_current_user),passwd:str=Form(...
             return{"ERROR delete user account username or password not correct"}
     else:
         raise HTTPException(404,"No such user exist to delete.")
-
+###Update profile of user
 @basicRoutes.patch("/update_profile", tags=['Account Settings'], description="Update user profile information partially")
 async def update_profile(profile_update: UserProfileUpdate, token: str = Depends(get_current_user)):
     try:
