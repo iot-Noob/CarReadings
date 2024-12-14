@@ -4,3 +4,13 @@ uvicorn
 python-jose[cryptography]
 bcrypt
 aiosqlite
+python-dotenv
+pydantic[email]
+python-multipart
+sqlalchemy
+databases
+asyncpg
+aiomysql
+pytest
+httpx
+python-dotenv

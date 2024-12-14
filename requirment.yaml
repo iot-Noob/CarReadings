@@ -1,0 +1,24 @@
+name: oilChange
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - bcrypt
+  - sqlalchemy
+  - pytest
+  - asyncpg
+  - aiosqlite
+  - aiomysql
+  - pydantic
+  - pip:
+      - passlib
+      - fastapi
+      - uvicorn
+      - python-jose[cryptography]
+      - python-dotenv
+      - pydantic[email]
+      - python-multipart
+      - databases
+      - httpx
